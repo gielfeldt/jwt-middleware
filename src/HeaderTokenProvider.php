@@ -2,7 +2,6 @@
 
 namespace Gielfeldt\JwtMiddleware;
 
-use Lcobucci\JWT\Validation\ConstraintViolation;
 use Psr\Http\Message\ServerRequestInterface;
 
 class HeaderTokenProvider implements TokenProviderInterface
@@ -25,6 +24,6 @@ class HeaderTokenProvider implements TokenProviderInterface
                 return $matches[1];
             }
         }
-        throw new ConstraintViolation("Token not found in header");
+        throw new TokenNotFoundException("Token not found in header: {$this->headerName}");
     }
 }

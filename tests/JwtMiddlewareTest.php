@@ -3,16 +3,13 @@
 namespace Gielfeldt\JwtMiddleware\Tests;
 
 use DateTimeImmutable;
-use DateTimeZone;
 use Gielfeldt\JwtMiddleware\HeaderTokenProvider;
 use Gielfeldt\JwtMiddleware\JwtMiddleware;
 use Lcobucci\Clock\FrozenClock;
-use Lcobucci\Clock\SystemClock;
 use Lcobucci\JWT\Configuration;
-use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
+use Lcobucci\JWT\Encoding\CannotDecodeContent;
+use Lcobucci\JWT\Token\InvalidTokenStructure;
 use Lcobucci\JWT\Validation\Constraint\StrictValidAt;
-use Lcobucci\JWT\Validation\Constraint\ValidAt;
-use Lcobucci\JWT\Validation\ConstraintViolation;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
@@ -44,7 +41,8 @@ class JwtMiddlewareTest extends TestCase implements RequestHandlerInterface
         $middleware = new JwtMiddleware($this->factory, $config, $provider);
         $request = $this->factory->createServerRequest('GET', '/');
         $response = $middleware->process($request, $this);
-        $this->assertEquals('Token not found in header', $response->getReasonPhrase());
+        $this->assertEquals('Unauthorized', $response->getReasonPhrase());
+        $this->assertStringContainsString('Token not found in header', (string) $response->getBody());
         $this->assertEquals(401, $response->getStatusCode());
     }
 
@@ -55,9 +53,8 @@ class JwtMiddlewareTest extends TestCase implements RequestHandlerInterface
         $middleware = new JwtMiddleware($this->factory, $config, $provider);
         $request = $this->factory->createServerRequest('GET', '/')
             ->withHeader('Authorization', 'Bearer not-a-valid-token');
-        $response = $middleware->process($request, $this);
-        $this->assertEquals('The JWT string must have two dots', $response->getReasonPhrase());
-        $this->assertEquals(401, $response->getStatusCode());
+        $this->expectException(InvalidTokenStructure::class);
+        $middleware->process($request, $this);
     }
 
     public function testCanHandleInvalidBase64Token()
@@ -67,9 +64,8 @@ class JwtMiddlewareTest extends TestCase implements RequestHandlerInterface
         $middleware = new JwtMiddleware($this->factory, $config, $provider);
         $request = $this->factory->createServerRequest('GET', '/')
             ->withHeader('Authorization', 'Bearer not.a.valid-token');
-        $response = $middleware->process($request, $this);
-        $this->assertEquals('Error while decoding from Base64Url, invalid base64 characters detected', $response->getReasonPhrase());
-        $this->assertEquals(401, $response->getStatusCode());
+        $this->expectException(CannotDecodeContent::class);
+        $middleware->process($request, $this);
     }
 
     public function testCanHandleTokenWithExpirationConstracts()
@@ -96,7 +92,8 @@ class JwtMiddlewareTest extends TestCase implements RequestHandlerInterface
         $request = $this->factory->createServerRequest('GET', '/')
             ->withHeader('Authorization', "Bearer $token");
         $response = $middleware->process($request, $this);
-        $this->assertEquals('The token is expired', $response->getReasonPhrase());
+        $this->assertEquals('Unauthorized', $response->getReasonPhrase());
+        $this->assertStringContainsString('token is expired', (string) $response->getBody());
         $this->assertEquals(401, $response->getStatusCode());
     }
 }

@@ -9,7 +9,6 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Throwable;
 
 class JwtMiddleware implements MiddlewareInterface
 {
@@ -17,11 +16,11 @@ class JwtMiddleware implements MiddlewareInterface
     private Configuration $config;
     private TokenProviderInterface $tokenProvider;
 
-    public function __construct(ResponseFactoryInterface $responseFactory, Configuration $config, TokenProviderInterface $tokenProvider)
+    public function __construct(ResponseFactoryInterface $responseFactory, Configuration $config, ?TokenProviderInterface $tokenProvider = null)
     {
         $this->responseFactory = $responseFactory;
         $this->config = $config;
-        $this->tokenProvider = $tokenProvider;
+        $this->tokenProvider = $tokenProvider ?? new HeaderTokenProvider();
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -38,13 +37,10 @@ class JwtMiddleware implements MiddlewareInterface
             $request = $request->withAttribute('token', $token);
 
             return $handler->handle($request);
-        } catch (RequiredConstraintsViolated $e) {
-            $message = array_map(function ($v) {
-                return $v->getMessage();
-            }, $e->violations());
-            return $this->responseFactory->createResponse(401, implode(' - ', $message));
-        } catch (Throwable $e) {
-            return $this->responseFactory->createResponse(401, $e->getMessage());
+        } catch (RequiredConstraintsViolated | TokenNotFoundException $e) {
+            $response = $this->responseFactory->createResponse(401);
+            $response->getBody()->write($e->getMessage());
+            return $response->withHeader('Content-Type', 'text/plain');
         }
     }
 }

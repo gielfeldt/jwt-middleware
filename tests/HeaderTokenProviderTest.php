@@ -3,7 +3,7 @@
 namespace Gielfeldt\JwtMiddleware\Tests;
 
 use Gielfeldt\JwtMiddleware\HeaderTokenProvider;
-use Lcobucci\JWT\Validation\ConstraintViolation;
+use Gielfeldt\JwtMiddleware\TokenNotFoundException;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\TestCase;
 
@@ -30,7 +30,7 @@ class HeaderTokenProviderTest extends TestCase
 
         $provider = new HeaderTokenProvider();
 
-        $this->expectException(ConstraintViolation::class);
+        $this->expectException(TokenNotFoundException::class);
         $provider->getToken($request);
     }
 }
