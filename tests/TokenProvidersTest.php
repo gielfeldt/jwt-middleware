@@ -2,6 +2,7 @@
 
 namespace Gielfeldt\JwtMiddleware\Tests;
 
+use Gielfeldt\JwtMiddleware\CookieTokenProvider;
 use Gielfeldt\JwtMiddleware\HeaderTokenProvider;
 use Gielfeldt\JwtMiddleware\TokenNotFoundException;
 use Gielfeldt\JwtMiddleware\TokenProviders;
@@ -13,17 +14,15 @@ class TokenProvidersTest extends TestCase
     public function testCanRetrieveTokenFromMultipleProviders()
     {
         $factory = new Psr17Factory();
-        $providers = new TokenProviders();
-        $providers->addProvider(new HeaderTokenProvider('test1'));
-        $providers->addProvider(new HeaderTokenProvider('test2'));
+        $providers = TokenProviders::withDefaultProviders();
 
         $request = $factory->createServerRequest('GET', '/test');
-        $request = $request->withHeader('test1', 'Bearer my-token');
+        $request = $request->withHeader('Authorization', 'Bearer my-token');
         $token = $providers->getToken($request);
         $this->assertEquals('my-token', $token);
 
         $request = $factory->createServerRequest('GET', '/test');
-        $request = $request->withHeader('test2', 'Bearer my-token');
+        $request = $request->withCookieParams(['jwt' => 'my-token']);
         $token = $providers->getToken($request);
         $this->assertEquals('my-token', $token);
     }
@@ -31,12 +30,11 @@ class TokenProvidersTest extends TestCase
     public function testWillFailOnMissingToken()
     {
         $factory = new Psr17Factory();
-        $providers = new TokenProviders();
-        $providers->addProvider(new HeaderTokenProvider('test1'));
-        $providers->addProvider(new HeaderTokenProvider('test2'));
+        $providers = TokenProviders::withDefaultProviders();
 
         $request = $factory->createServerRequest('GET', '/test');
-        $request = $request->withHeader('test3', 'Bearer my-token');
+        $request = $request->withHeader('Not-Authorization', 'Bearer my-token');
+        $request = $request->withCookieParams(['not-jwt' => 'my-token']);
         $this->expectException(TokenNotFoundException::class);
         $providers->getToken($request);
     }
