@@ -2,8 +2,6 @@
 
 namespace Gielfeldt\JwtMiddleware\Tests;
 
-use Gielfeldt\JwtMiddleware\CookieTokenProvider;
-use Gielfeldt\JwtMiddleware\HeaderTokenProvider;
 use Gielfeldt\JwtMiddleware\TokenNotFoundException;
 use Gielfeldt\JwtMiddleware\TokenProviders;
 use Nyholm\Psr7\Factory\Psr17Factory;
