@@ -20,7 +20,7 @@ class JwtMiddleware implements MiddlewareInterface
     {
         $this->responseFactory = $responseFactory;
         $this->config = $config;
-        $this->tokenProvider = $tokenProvider ?? new HeaderTokenProvider();
+        $this->tokenProvider = $tokenProvider ?? TokenProviders::withDefaultProviders();
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface

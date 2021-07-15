@@ -24,4 +24,12 @@ class TokenProviders implements TokenProviderInterface
         }
         throw new TokenNotFoundException("Token not found by any provider. " . count($this->providers) . ' tried');
     }
+
+    public static function withDefaultProviders(): TokenProviderInterface
+    {
+        $provider = new self();
+        $provider->addProvider(new HeaderTokenProvider());
+        $provider->addProvider(new CookieTokenProvider());
+        return $provider;
+    }
 }
