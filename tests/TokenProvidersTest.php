@@ -44,8 +44,6 @@ class TokenProvidersTest extends TestCase
         $providers = new TokenProviders();
 
         $request = $factory->createServerRequest('GET', '/test');
-        $request = $request->withHeader('Not-Authorization', 'Bearer my-token');
-        $request = $request->withCookieParams(['not-jwt' => 'my-token']);
         $this->expectException(NoTokenProvidersException::class);
         $providers->getToken($request);
     }
