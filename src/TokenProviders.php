@@ -3,6 +3,7 @@
 namespace Gielfeldt\JwtMiddleware;
 
 use Psr\Http\Message\ServerRequestInterface;
+use RuntimeException;
 
 class TokenProviders implements TokenProviderInterface
 {
@@ -15,14 +16,21 @@ class TokenProviders implements TokenProviderInterface
 
     public function getToken(ServerRequestInterface $request): string
     {
+        if (empty($this->providers)) {
+            throw new NoTokenProvidersException("No token providers defined");
+        }
+        $errors = [];
         foreach ($this->providers as $provider) {
             try {
                 return $provider->getToken($request);
             } catch (TokenNotFoundException $e) {
-                // black hole, try next provider
+                // save error, try next provider
+                $errors[] = '- ' . get_class($provider) . ': ' . $e->getMessage();
             }
         }
-        throw new TokenNotFoundException("Token not found by any provider. " . count($this->providers) . ' tried');
+        $message = "Token not found by any provider\n";
+        $message .= join("\n", $errors);
+        throw new TokenNotFoundException($message);
     }
 
     public static function withDefaultProviders(): TokenProviderInterface

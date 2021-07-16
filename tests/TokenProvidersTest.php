@@ -2,6 +2,7 @@
 
 namespace Gielfeldt\JwtMiddleware\Tests;
 
+use Gielfeldt\JwtMiddleware\NoTokenProvidersException;
 use Gielfeldt\JwtMiddleware\TokenNotFoundException;
 use Gielfeldt\JwtMiddleware\TokenProviders;
 use Nyholm\Psr7\Factory\Psr17Factory;
@@ -34,6 +35,18 @@ class TokenProvidersTest extends TestCase
         $request = $request->withHeader('Not-Authorization', 'Bearer my-token');
         $request = $request->withCookieParams(['not-jwt' => 'my-token']);
         $this->expectException(TokenNotFoundException::class);
+        $providers->getToken($request);
+    }
+
+    public function testWillFailOnMissingTokenProviders()
+    {
+        $factory = new Psr17Factory();
+        $providers = new TokenProviders();
+
+        $request = $factory->createServerRequest('GET', '/test');
+        $request = $request->withHeader('Not-Authorization', 'Bearer my-token');
+        $request = $request->withCookieParams(['not-jwt' => 'my-token']);
+        $this->expectException(NoTokenProvidersException::class);
         $providers->getToken($request);
     }
 }
